@@ -190,9 +190,11 @@ isOwner :: Maybe Piece -> PlayerColor -> Bool
 isOwner Nothing _ = False
 isOwner (Just pc) pl = (owner pc) == pl
   
-
 isValidMove :: Move -> Game -> Bool
-isValidMove (Move initLoc targetLoc seqLocs) g =
+isValidMove (Move initLoc targetLoc _) g =
   let player = currentPlayer g
       pieceToMove = pieceAtLoc initLoc g
-  in isOwner pieceToMove player
+      possibleMoves = validPawnDestFrom player initLoc
+      correctOwner = isOwner pieceToMove player
+      legalTarget = (elem targetLoc possibleMoves)
+  in ((&&) correctOwner legalTarget)
