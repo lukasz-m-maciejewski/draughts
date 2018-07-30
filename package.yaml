@@ -1,0 +1,48 @@
+name:                draughts
+version:             0.1.0.0
+github:              "lukasz-m-maciejewski/draughts"
+license:             MIT
+author:              "Lukasz Maciejewski"
+maintainer:          "lukasz.m.maciejewski@gmail.com"
+copyright:           "2018 Lukasz Maciejewski"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Fun
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/lukasz-m-maciejewski/draughts#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  draughts-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - draughts
+
+tests:
+  draughts-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - draughts
