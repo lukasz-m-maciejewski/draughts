@@ -17,7 +17,7 @@ module Lib
     , fmtGame
     , initialGameState
     , Move (Move)
-    , validPawnDestFrom
+
     , isValidMove
     ) where
 
@@ -47,6 +47,7 @@ maxX = 10
 minX =  1
 maxY = 10
 minY =  1
+
 
 data Piece = WhitePawn | BlackPawn | WhiteKing | BlackKing
            deriving (Eq, Show)
@@ -158,25 +159,40 @@ initialGameState = Game initialBoardState WhitePlayer
 
 data Move = Move Location Location [Location]
 
-validPawnDestFrom :: PlayerColor -> Location -> [Location]
-validPawnDestFrom p l = 
-  let x = xpos l
-      y = ypos l
-      maybeUpLeft  = if ((&&) (x > minX) (y < maxY))
-        then Just (Location (x - 1) (y + 1))
-        else Nothing
-      maybeUpRight = if ((&&) (x < maxX) (y < maxY))
-        then Just (Location (x + 1) (y + 1))
-        else Nothing
-      maybeDownLeft = if ((&&) (x > minX) (minY < y))
-        then Just (Location (x - 1) (y - 1))
-        else Nothing
-      maybeDownRight = if ((&&) (x < maxX) (minY < y))
-        then Just (Location (x + 1) (y - 1))
-        else Nothing
-  in if p == WhitePlayer
-        then DM.catMaybes [maybeUpLeft, maybeUpRight]
-        else DM.catMaybes [maybeDownLeft, maybeDownRight]
+-- validPawnDestFrom :: Game -> Location -> [Location]
+-- validPawnDestFrom p l = 
+--   let x = xpos l
+--       y = ypos l
+--       maybeUpLeft  = if ((&&) (x > minX) (y < maxY))
+--         then Just (Location (x - 1) (y + 1))
+--         else Nothing
+--       maybeUpRight = if ((&&) (x < maxX) (y < maxY))
+--         then Just (Location (x + 1) (y + 1))
+--         else Nothing
+--       maybeDownLeft = if ((&&) (x > minX) (minY < y))
+--         then Just (Location (x - 1) (y - 1))
+--         else Nothing
+--       maybeDownRight = if ((&&) (x < maxX) (minY < y))
+--         then Just (Location (x + 1) (y - 1))
+--         else Nothing
+--   in [maybeUpLeft, maybeUpRight, maybeDownLeft, maybeDownRight]
+
+validMoveHelper :: Location -> Location -> Game -> Bool
+validMoveHelper from to g =
+  let xshift = (xpos from) - (xpos to)
+      yshift = (ypos from) - (ypos to)
+      xshiftValid = (xpos to <= maxX) && (xpos to >= minX)
+      yshiftValid = (ypos to <= maxY) && (ypos to >= minY)
+      moveInsideBoard = xshiftValid && yshiftValid && ((abs xshift) == (abs yshift))
+      targetEmpty = not $ locationOccupied to g
+      ifJumpByTwoThenNonEmptyInBetween = if (abs xshift) == 1 then True else
+        let jumpoverLoc = Location ((xpos from) + (xshift `div` 2)) ((ypos from) + (yshift `div` 2))
+            pc = pieceAtLoc jumpoverLoc g
+        in False            
+  in moveInsideBoard && targetEmpty && ifJumpByTwoThenNonEmptyInBetween
+      
+  
+  
 
 pieceAtLoc :: Location -> Game -> Maybe Piece
 pieceAtLoc l g =
@@ -186,6 +202,12 @@ pieceAtLoc l g =
       sq = b !! x !! y
   in piece sq
 
+locationOccupied :: Location -> Game -> Bool
+locationOccupied l g = case pieceAtLoc l g of
+  Nothing -> False
+  otherwise -> True
+  
+
 isOwner :: Maybe Piece -> PlayerColor -> Bool
 isOwner Nothing _ = False
 isOwner (Just pc) pl = (owner pc) == pl
@@ -194,7 +216,7 @@ isValidMove :: Move -> Game -> Bool
 isValidMove (Move initLoc targetLoc _) g =
   let player = currentPlayer g
       pieceToMove = pieceAtLoc initLoc g
-      possibleMoves = validPawnDestFrom player initLoc
+      possibleMoves = undefined
       correctOwner = isOwner pieceToMove player
-      legalTarget = (elem targetLoc possibleMoves)
+      legalTarget = undefined
   in ((&&) correctOwner legalTarget)

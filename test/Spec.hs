@@ -1,2 +1,5 @@
+import Test.Hspec
+import PositionSpec
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = positionSpec
