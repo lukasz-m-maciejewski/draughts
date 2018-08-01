@@ -12,7 +12,7 @@ module Position
 data Pos = Pos {
   x_ :: Int,
   y_ :: Int
-  } deriving (Eq)
+  } deriving (Eq, Ord)
 instance Show Pos where
   show (Pos x y) = "(" ++ (show x) ++ ", " ++ (show y) ++ ")"
 
@@ -23,7 +23,8 @@ data PosConstraint = PosConstraint {
   yMax :: Int
   } deriving (Eq)
 instance Show PosConstraint where
-  show pc = "(" ++ (show $ xMin pc)
+  show pc = "("
+            ++ (show $ xMin pc)
             ++ " < x < "
             ++ (show $ xMax pc)
             ++ ", "

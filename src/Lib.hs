@@ -1,66 +1,28 @@
 module Lib
-    ( initialBoard
-    , Piece (WhitePawn, BlackPawn, WhiteKing, BlackKing)
-    , PlayerColor (WhitePlayer, BlackPlayer)
-    , SquareColor (White, Black)
-    , Location (Location)
-    , squareColorAt
-    , squareColorAtLoc
-    , initialContent
-    , initialContentLoc
-    , Square (Square)
+    ( Location (Location)
     , Grid
-    , finiteCoordGrid
-    , locToSquare
-    , initialBoardState
-    , Game (Game)
-    , fmtGame
-    , initialGameState
-    , Move (Move)
-
-    , isValidMove
+    , zipOverGrid
+    , zipOverGridWith
+    , mapOverGrid
     ) where
 
-import Data.List as DL
+-- import Data.List as DL
 import Text.Printf as TP
 import Data.Char as DC
-import Data.Maybe as DM
+-- import Data.Maybe as DM
 
-initialBoard = [
-  " . b . b . b . b . b",
-  " b . b . b . b . b .",
-  " . b . b . b . b . b",
-  " b . b . b . b . b .",
-  " . , . , . , . , . ,",
-  " , . , . , . , . , .",
-  " . w . w . w . w . w",
-  " w . w . w . w . w .",
-  " . w . w . w . w . w",
-  " w . w . w . w . w ."
-        ]
-maxX :: Int
-minX :: Int
-maxY :: Int
-minY :: Int
+type Grid a = [[a]]
 
-maxX = 10
-minX =  1
-maxY = 10
-minY =  1
+zipOverGrid :: Grid a -> Grid b -> Grid (a, b)
+zipOverGrid = zipWith zip
 
+zipOverGridWith :: (a -> b -> c) -> Grid a -> Grid b -> Grid c
+zipOverGridWith = zipWith . zipWith
 
-data Piece = WhitePawn | BlackPawn | WhiteKing | BlackKing
-           deriving (Eq, Show)
+mapOverGrid :: (a -> b) -> Grid a -> Grid b
+mapOverGrid = (map . map)
 
-data PlayerColor = WhitePlayer | BlackPlayer deriving (Eq, Show)
-
-owner :: Piece -> PlayerColor
-owner WhitePawn = WhitePlayer
-owner WhiteKing = WhitePlayer
-owner BlackPawn = BlackPlayer
-owner BlackKing = BlackPlayer
-
-data SquareColor = White | Black deriving (Eq, Show)
+-- data SquareColor = White | Black deriving (Eq, Show)
 data Location = Location {xpos :: Int, ypos :: Int} deriving (Eq)
 
 fmtLocNum :: Location -> String
@@ -78,86 +40,76 @@ instance Show Location where
 tupleToLoc :: (Int, Int) -> Location
 tupleToLoc (x, y) = Location x y
 
-type Grid a = [[a]]
 
-squareColorAt :: (Int, Int) -> SquareColor
-squareColorAt (x, y) =
-  if odd (x + y) then White else Black
+-- squareColorAt :: (Int, Int) -> SquareColor
+-- squareColorAt (x, y) =
+--   if odd (x + y) then White else Black
 
-squareColorAtLoc :: Location -> SquareColor
-squareColorAtLoc l = squareColorAt (xpos l, ypos l)
+-- squareColorAtLoc :: Location -> SquareColor
+-- squareColorAtLoc l = squareColorAt (xpos l, ypos l)
 
-colorSymbol :: SquareColor -> String
-colorSymbol White = "."
-colorSymbol Black = ","
+-- colorSymbol :: SquareColor -> String
+-- colorSymbol White = "."
+-- colorSymbol Black = ","
 
-initialContent :: (Int, Int) -> Maybe Piece
-initialContent (x, y) = case () of _
-                                     | odd (x + y) -> Nothing
-                                     | y < 5 -> Just WhitePawn
-                                     | y > 6 -> Just BlackPawn
-                                     | otherwise -> Nothing
+-- initialContent :: (Int, Int) -> Maybe Piece
+-- initialContent (x, y) = case () of _
+--                                      | odd (x + y) -> Nothing
+--                                      | y < 5 -> Just WhitePawn
+--                                      | y > 6 -> Just BlackPawn
+--                                      | otherwise -> Nothing
 
-initialContentLoc :: Location -> Maybe Piece
-initialContentLoc l = initialContent (xpos l, ypos l)
+-- initialContentLoc :: Location -> Maybe Piece
+-- initialContentLoc l = initialContent (xpos l, ypos l)
   
-data Square = Square {
-                piece :: Maybe Piece,
-                location :: Location
-            }
-            deriving Eq
+-- data Square = Square {
+--                 piece :: Maybe Piece,
+--                 location :: Location
+--             }
+--             deriving Eq
 
-fmtSquare :: Square -> String
-fmtSquare sq = case piece sq of
-      Nothing -> colorSymbol $ squareColorAtLoc $ location sq
-      Just WhitePawn -> "w"
-      Just BlackPawn -> "b"
-      Just WhiteKing -> "W"
-      Just BlackKing -> "B"
+-- fmtSquare :: Square -> String
+-- fmtSquare sq = case piece sq of
+--       Nothing -> colorSymbol $ squareColorAtLoc $ location sq
+--       Just WhitePawn -> "w"
+--       Just BlackPawn -> "b"
+--       Just WhiteKing -> "W"
+--       Just BlackKing -> "B"
 
-instance Show Square where
-  show = fmtSquare 
+-- instance Show Square where
+--   show = fmtSquare 
 
-zipOverGrid :: Grid a -> Grid b -> Grid (a, b)
-zipOverGrid = zipWith zip
+-- finiteCoordGrid :: Int -> Grid Location
+-- finiteCoordGrid n =
+--   let cols = repeat [1..n]
+--       rows = map repeat [1..n]
+--       xyGrid = zipOverGrid rows cols
+--   in mapOverGrid tupleToLoc xyGrid 
 
-zipOverGridWith :: (a -> b -> c) -> Grid a -> Grid b -> Grid c
-zipOverGridWith = zipWith . zipWith
+-- locToSquare :: Location -> Square
+-- locToSquare = (\loc -> Square (initialContentLoc loc) loc)
 
-mapOverGrid :: (a -> b) -> Grid a -> Grid b
-mapOverGrid = (map . map)
+-- initialBoardState :: Grid Square
+-- initialBoardState =
+--   mapOverGrid locToSquare (finiteCoordGrid 10)
 
-finiteCoordGrid :: Int -> Grid Location
-finiteCoordGrid n =
-  let cols = repeat [1..n]
-      rows = map repeat [1..n]
-      xyGrid = zipOverGrid rows cols
-  in mapOverGrid tupleToLoc xyGrid 
+-- data Game = Game { board :: Grid Square
+--                  , currentPlayer :: PlayerColor
+--                  }
 
-locToSquare :: Location -> Square
-locToSquare = (\loc -> Square (initialContentLoc loc) loc)
-
-initialBoardState :: Grid Square
-initialBoardState =
-  mapOverGrid locToSquare (finiteCoordGrid 10)
-
-data Game = Game { board :: Grid Square
-                 , currentPlayer :: PlayerColor
-                 }
-
-fmtGame :: Game -> String
-fmtGame g =
-  let grid = reverse $ transpose $ board g
-      formattedSquares = mapOverGrid
-                         (\s -> (fmtSquare s) ++ (show $ location s) ++ " ")
-                         grid
-      concatThirdLvl = map (foldr (++) []) formattedSquares
-  in unlines $ concatThirdLvl
+-- fmtGame :: Game -> String
+-- fmtGame g =
+--   let grid = reverse $ transpose $ board g
+--       formattedSquares = mapOverGrid
+--                          (\s -> (fmtSquare s) ++ (show $ location s) ++ " ")
+--                          grid
+--       concatThirdLvl = map (foldr (++) []) formattedSquares
+--   in unlines $ concatThirdLvl
       
-initialGameState :: Game
-initialGameState = Game initialBoardState WhitePlayer
+-- initialGameState :: Game
+-- initialGameState = Game initialBoardState WhitePlayer
 
-data Move = Move Location Location [Location]
+-- data Move = Move Location Location [Location]
 
 -- validPawnDestFrom :: Game -> Location -> [Location]
 -- validPawnDestFrom p l = 
@@ -177,46 +129,43 @@ data Move = Move Location Location [Location]
 --         else Nothing
 --   in [maybeUpLeft, maybeUpRight, maybeDownLeft, maybeDownRight]
 
-validMoveHelper :: Location -> Location -> Game -> Bool
-validMoveHelper from to g =
-  let xshift = (xpos from) - (xpos to)
-      yshift = (ypos from) - (ypos to)
-      xshiftValid = (xpos to <= maxX) && (xpos to >= minX)
-      yshiftValid = (ypos to <= maxY) && (ypos to >= minY)
-      moveInsideBoard = xshiftValid && yshiftValid && ((abs xshift) == (abs yshift))
-      targetEmpty = not $ locationOccupied to g
-      ifJumpByTwoThenNonEmptyInBetween = if (abs xshift) == 1 then True else
-        let jumpoverLoc = Location ((xpos from) + (xshift `div` 2)) ((ypos from) + (yshift `div` 2))
-            pc = pieceAtLoc jumpoverLoc g
-        in False            
-  in moveInsideBoard && targetEmpty && ifJumpByTwoThenNonEmptyInBetween
+-- validMoveHelper :: Location -> Location -> Game -> Bool
+-- validMoveHelper from to g =
+--   let xshift = (xpos from) - (xpos to)
+--       yshift = (ypos from) - (ypos to)
+--       xshiftValid = (xpos to <= maxX) && (xpos to >= minX)
+--       yshiftValid = (ypos to <= maxY) && (ypos to >= minY)
+--       moveInsideBoard = xshiftValid && yshiftValid && ((abs xshift) == (abs yshift))
+--       targetEmpty = not $ locationOccupied to g
+--       ifJumpByTwoThenNonEmptyInBetween = if (abs xshift) == 1 then True else
+--         let jumpoverLoc = Location ((xpos from) + (xshift `div` 2)) ((ypos from) + (yshift `div` 2))
+--             pc = pieceAtLoc jumpoverLoc g
+--         in False            
+--   in moveInsideBoard && targetEmpty && ifJumpByTwoThenNonEmptyInBetween
       
-  
+-- pieceAtLoc :: Location -> Game -> Maybe Piece
+-- pieceAtLoc l g =
+--   let b = board g
+--       x = (xpos l) - 1
+--       y = (ypos l) - 1
+--       sq = b !! x !! y
+--   in piece sq
+
+-- locationOccupied :: Location -> Game -> Bool
+-- locationOccupied l g = case pieceAtLoc l g of
+--   Nothing -> False
+--   otherwise -> True
   
 
-pieceAtLoc :: Location -> Game -> Maybe Piece
-pieceAtLoc l g =
-  let b = board g
-      x = (xpos l) - 1
-      y = (ypos l) - 1
-      sq = b !! x !! y
-  in piece sq
-
-locationOccupied :: Location -> Game -> Bool
-locationOccupied l g = case pieceAtLoc l g of
-  Nothing -> False
-  otherwise -> True
+-- isOwner :: Maybe Piece -> PlayerColor -> Bool
+-- isOwner Nothing _ = False
+-- isOwner (Just pc) pl = (owner pc) == pl
   
-
-isOwner :: Maybe Piece -> PlayerColor -> Bool
-isOwner Nothing _ = False
-isOwner (Just pc) pl = (owner pc) == pl
-  
-isValidMove :: Move -> Game -> Bool
-isValidMove (Move initLoc targetLoc _) g =
-  let player = currentPlayer g
-      pieceToMove = pieceAtLoc initLoc g
-      possibleMoves = undefined
-      correctOwner = isOwner pieceToMove player
-      legalTarget = undefined
-  in ((&&) correctOwner legalTarget)
+-- isValidMove :: Move -> Game -> Bool
+-- isValidMove (Move initLoc targetLoc _) g =
+--   let player = currentPlayer g
+--       pieceToMove = pieceAtLoc initLoc g
+--       possibleMoves = undefined
+--       correctOwner = isOwner pieceToMove player
+--       legalTarget = undefined
+--   in ((&&) correctOwner legalTarget)
