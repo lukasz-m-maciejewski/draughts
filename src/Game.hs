@@ -93,6 +93,8 @@ playMove m g = case applyMove m g of
                  Nothing -> Left g
                  Just newGameState -> Right newGameState
 
+-- look there harder
+-- http://hackage.haskell.org/package/base-4.11.1.0/docs/Control-Monad.html#v:liftM
 applyMove :: Move -> Game -> Maybe Game
 applyMove (MoveSimple pos s) g =
   case Map.lookup pos (boardState g) of
