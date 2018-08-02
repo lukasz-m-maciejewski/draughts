@@ -48,15 +48,15 @@ shiftUnconstrained NE (Pos x y) = Pos (x+1) (y+1)
 shiftUnconstrained SW (Pos x y) = Pos (x-1) (y-1)
 shiftUnconstrained SE (Pos x y) = Pos (x+1) (y-1)
 
-shift :: BasePosShift -> Pos -> PosConstraint -> Maybe Pos
-shift ps p pc =
+shift :: PosConstraint -> BasePosShift -> Pos -> Maybe Pos
+shift pc ps p =
   let n = shiftUnconstrained ps p
   in if isInside n pc
      then Just n
      else Nothing
 
 shiftM :: PosConstraint -> BasePosShift -> Maybe Pos -> Maybe Pos
-shiftM pc ps (Just p) = shift ps p pc
+shiftM pc ps (Just p) = shift pc ps p
 shiftM _  _  Nothing  = Nothing
 
 shiftTrace :: PosConstraint -> PosShift -> Pos ->  [Maybe Pos]

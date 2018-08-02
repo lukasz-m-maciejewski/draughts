@@ -1,7 +1,10 @@
-module Game 
+module Game
   ( Game (Game)
   , makeGame
+  , putGame
+  , putMaybeGame
   , boardForState
+  , applyMove
   , playMove
   ) where
 
@@ -42,6 +45,13 @@ instance Show Game where
     (boardForState $ boardState g)
     ++ "\nActive: " ++ (show $ activePlayer g)
 
+putGame :: Game -> IO ()
+putGame = putStrLn . show
+
+putMaybeGame :: Maybe Game -> IO ()
+putMaybeGame Nothing = putStrLn "Nothing"
+putMaybeGame (Just g) = putGame g
+
 makeGame :: Game
 makeGame = Game initialPositions WhitePlayer (PosConstraint 1 10 1 10)
 
@@ -76,21 +86,60 @@ instance Show SquareColor where
 emptyColor :: (Int, Int) -> SquareColor
 emptyColor (x, y) = if odd (x + y) then WhiteSquare else BlackSquare
 
-data Move = MoveSimple Pos BasePosShift 
-
-applyMove :: Move -> Game -> Maybe Game
-applyMove (MoveSimple pos s) g =
-  case Map.lookup pos (boardState g) of
-    Nothing -> Nothing
-    Just (Piece Pawn p) -> if (p == (activePlayer g))
-                           then let closestPos = shift s pos (boardSize g)
-                                    in undefined
-                           else Nothing
-    Just (Piece King _) -> undefined
+data Move = MoveSimple Pos BasePosShift
 
 playMove :: Move -> Game -> Either Game Game
 playMove m g = case applyMove m g of
                  Nothing -> Left g
                  Just newGameState -> Right newGameState
 
-                 
+applyMove :: Move -> Game -> Maybe Game
+applyMove (MoveSimple pos s) g =
+  case Map.lookup pos (boardState g) of
+    Nothing ->
+      Nothing
+
+    Just (Piece Pawn p) ->
+      if (p == (activePlayer g))
+      then
+        let actPlr = activePlayer g
+            bsz = boardSize g
+            bst = boardState g
+        in
+          do
+            { closestPos <- shift bsz s pos
+            ; case Map.lookup closestPos bst of
+                -- we're moving onto empty square
+                Nothing -> gameAfterMove g pos closestPos []
+                Just (Piece _ plr) -> if plr == actPlr
+                  -- we're moving our piece into other our piece
+                  then Nothing
+                  -- we're next to opponent, need to check if one after is empty
+                  else do
+                  { posBehindOpp <- shift bsz s closestPos
+                  ; case Map.lookup posBehindOpp bst of
+                      -- position behind opponent piece is empty
+                      Nothing -> gameAfterMove g pos posBehindOpp [closestPos]
+                      -- position behind opponent piece is occupied
+                      _ -> Nothing
+                  }
+            }
+
+      else Nothing
+
+    Just (Piece King _) -> undefined
+
+gameAfterMove :: Game -> Pos -> Pos -> [Pos] -> Maybe Game
+gameAfterMove g posBegin posEnd removals =
+  case Map.lookup posBegin (boardState g) of
+    Nothing -> Nothing
+    Just piece ->
+      let newState = Map.insert posEnd piece (Map.delete posBegin (boardState g))
+      in Just (gameAdvanceState g (removePieces newState removals))
+
+removePieces :: GameState -> [Pos] -> GameState
+removePieces g [] = g
+removePieces _ _ = undefined
+
+gameAdvanceState :: Game -> GameState -> Game
+gameAdvanceState g gs = Game gs (activePlayer g) (boardSize g)
