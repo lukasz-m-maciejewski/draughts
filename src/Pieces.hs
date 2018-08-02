@@ -1,12 +1,15 @@
 module Pieces
   ( Player (WhitePlayer, BlackPlayer)
+  , opponentOf
   , PieceKind (Pawn, King)
   , Piece (Piece)
   ) where
 
-import Position
-
 data Player = WhitePlayer | BlackPlayer deriving (Eq, Show)
+opponentOf:: Player -> Player
+opponentOf WhitePlayer = BlackPlayer
+opponentOf BlackPlayer = WhitePlayer
+
 data PieceKind = Pawn | King deriving (Eq, Show)
 
 data Piece = Piece PieceKind Player deriving (Eq)
