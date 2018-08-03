@@ -6,6 +6,7 @@ module Game
   , boardForState
   , applyMove
   , playMove
+  , parseMove
   ) where
 
 import Position
@@ -15,6 +16,8 @@ import Lib
 import Data.Map as Map
 import Text.Printf as TP
 import Data.List
+
+import Data.Char
 
 type GameState = Map.Map Pos Piece
 
@@ -68,7 +71,7 @@ boardForState stateMap =
       topsyYLabels = zipWith (++) yLabels topsyLines
       topsyXSprtrs = "  |____________________"
       topsyXLabels = "    A B C D E F G H I J"
-  in unlines $ topsyYLabels ++ [topsyXSprtrs, topsyXLabels]
+  in unlines $ ["         "] ++ topsyYLabels ++ [topsyXSprtrs, topsyXLabels]
 
 
 finiteCoordGrid :: Int -> Grid (Int, Int)
@@ -86,12 +89,41 @@ instance Show SquareColor where
 emptyColor :: (Int, Int) -> SquareColor
 emptyColor (x, y) = if odd (x + y) then WhiteSquare else BlackSquare
 
-data Move = MoveSimple Pos BasePosShift
+data Move = MoveSimple Pos BasePosShift deriving (Show, Eq)
 
-playMove :: Move -> Game -> Either Game Game
-playMove m g = case applyMove m g of
+playMove :: Maybe Move -> Game -> Either Game Game
+playMove Nothing g = Left g
+playMove (Just m) g = case applyMove m g of
                  Nothing -> Left g
                  Just newGameState -> Right newGameState
+
+parseMove :: String -> Maybe Move
+parseMove s = do
+  { x <- validX (s !! 0)
+  ; y <- validY (s !! 1)
+  ; dir <- validDir (s !! 3) (s !! 4)
+  ; Just (MoveSimple (Pos x y) dir)
+  }
+
+validX :: Char -> Maybe Int
+validX c = if ((ord 'A') <= (ord c)) && ((ord c) <= (ord 'J'))
+           then Just ((ord c) - (ord 'A') + 1)
+           else Nothing
+
+validY :: Char -> Maybe Int
+-- validY (ord '0') = Just 10
+validY '0' = Just 10
+validY c = if ((ord '1') <= (ord c)) && ((ord c) <= (ord '9'))
+           then Just ((ord c) - (ord '0'))
+           else Nothing
+
+validDir :: Char -> Char -> Maybe BasePosShift
+validDir 'N' 'E' = Just NE
+validDir 'N' 'W' = Just NW
+validDir 'S' 'E' = Just SE
+validDir 'S' 'W' = Just SW
+validDir _ _ = Nothing
+
 
 -- look there harder
 -- http://hackage.haskell.org/package/base-4.11.1.0/docs/Control-Monad.html#v:liftM
