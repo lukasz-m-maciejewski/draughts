@@ -5,8 +5,6 @@ module PositionSpec
 import Test.Hspec
 import Position
 
-
-
 positionSpec :: IO ()
 positionSpec = hspec $ do
   describe "shiftUnconstrained should simply increment coords" $ do
@@ -23,28 +21,28 @@ positionSpec = hspec $ do
     let tc = PosConstraint 1 2 1 2
     it "should cut of when going from top right corner anywhere but SW" $
       do { let p = (Pos 2 2)
-         ; shift NE p tc `shouldBe` Nothing
-         ; shift NW p tc `shouldBe` Nothing
-         ; shift SE p tc `shouldBe` Nothing
-         ; shift SW p tc `shouldBe` Just (Pos 1 1) }
+         ; shift tc NE p `shouldBe` Nothing
+         ; shift tc NW p `shouldBe` Nothing
+         ; shift tc SE p `shouldBe` Nothing
+         ; shift tc SW p `shouldBe` Just (Pos 1 1) }
     it "should cut of when going from top left corner anywhere but SE" $
       do { let p = (Pos 1 2)
-         ; shift NE p tc `shouldBe` Nothing
-         ; shift NW p tc `shouldBe` Nothing
-         ; shift SE p tc `shouldBe` Just (Pos 2 1)
-         ; shift SW p tc `shouldBe` Nothing }
+         ; shift tc NE p `shouldBe` Nothing
+         ; shift tc NW p `shouldBe` Nothing
+         ; shift tc SE p `shouldBe` Just (Pos 2 1)
+         ; shift tc SW p `shouldBe` Nothing }
     it "should cut of when going from bottom right corner anywhere but NW" $
       do { let p = (Pos 2 1)
-         ; shift NE p tc `shouldBe` Nothing
-         ; shift NW p tc `shouldBe` Just (Pos 1 2)
-         ; shift SE p tc `shouldBe` Nothing
-         ; shift SW p tc `shouldBe` Nothing }
+         ; shift tc NE p `shouldBe` Nothing
+         ; shift tc NW p `shouldBe` Just (Pos 1 2)
+         ; shift tc SE p `shouldBe` Nothing
+         ; shift tc SW p `shouldBe` Nothing }
     it "should cut of when going from bottom left corner anywhere but NE" $
       do { let p = (Pos 1 1)
-         ; shift NE p tc `shouldBe` Just (Pos 2 2)
-         ; shift NW p tc `shouldBe` Nothing
-         ; shift SE p tc `shouldBe` Nothing
-         ; shift SW p tc `shouldBe` Nothing }
+         ; shift tc NE p `shouldBe` Just (Pos 2 2)
+         ; shift tc NW p `shouldBe` Nothing
+         ; shift tc SE p `shouldBe` Nothing
+         ; shift tc SW p `shouldBe` Nothing }
 
 
 

@@ -61,6 +61,6 @@ shiftM _  _  Nothing  = Nothing
 
 shiftTrace :: PosConstraint -> PosShift -> Pos ->  [Maybe Pos]
 shiftTrace pc (PosShift n bs) p =
-  let functList = map (shiftM pc)  (take n $ repeat bs)
+  let functList = map (shiftM pc) (take n $ repeat bs)
   in scanr ($) (Just p) functList 
 

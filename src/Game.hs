@@ -140,8 +140,8 @@ gameAfterMove g posBegin posEnd removals =
       in Just (gameAdvanceState g (removePieces newState removals))
 
 removePieces :: GameState -> [Pos] -> GameState
-removePieces g [] = g
-removePieces _ _ = undefined
+removePieces gs [] = gs
+removePieces gs (x:xs) = removePieces (Map.delete x gs) xs
 
 gameAdvanceState :: Game -> GameState -> Game
 gameAdvanceState g gs = Game gs (activePlayer g) (boardSize g)
