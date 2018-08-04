@@ -6,6 +6,7 @@ module Position
   , PosShift (PosShift)
   , shiftUnconstrained
   , shift
+  , shiftM
   , shiftTrace
   ) where
 
