@@ -3,6 +3,7 @@ module Main where
 import Game
 
 import System.IO
+import System.Console.Readline
 
 main :: IO ()
 main = do
@@ -13,13 +14,17 @@ playGame :: Either (Game, String) Game -> IO ()
 playGame (Left (g, s)) = do
   putStrLn $ show g
   putStrLn $ "ERROR!" ++ s
-  putStr " Your move> "
-  moveStr <- getLine
-  playGame (playMove (parseMove moveStr) g)
+  playTurn g
 
 playGame (Right g) = do
   putStrLn $ show g
-  putStr "Your move> "
-  moveStr <- getLine
-  playGame (playMove (parseMove moveStr) g)
+  playTurn g
 
+playTurn :: Game -> IO ()
+playTurn g = do
+  input <- readline "Your Move> "
+  case input of
+    Nothing -> playGame (Left (g, "Invalid input"))
+    Just "quit" -> return ()
+    Just "exit" -> return ()
+    Just moveStr -> playGame (playMove (parseMove moveStr) g)

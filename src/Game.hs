@@ -79,7 +79,6 @@ boardForState stateMap =
       topsyXLabels = "    A B C D E F G H I J"
   in unlines $ ["         "] ++ topsyYLabels ++ [topsyXSprtrs, topsyXLabels]
 
-
 finiteCoordGrid :: Int -> Grid (Int, Int)
 finiteCoordGrid n =
   let cols = repeat [1..n]
@@ -130,9 +129,11 @@ validDir 'S' 'E' = Just SE
 validDir 'S' 'W' = Just SW
 validDir _ _ = Nothing
 
-
 -- look there harder
 -- http://hackage.haskell.org/package/base-4.11.1.0/docs/Control-Monad.html#v:liftM
+
+-- alternative - generate map move -> game for all possible moves
+-- this may create overhead but should eliminate duplication
 applyMove :: Move -> Game -> Either String Game
 applyMove (MoveSimple pos s) g =
   case Map.lookup pos (boardState g) of
@@ -163,7 +164,7 @@ applyMove (MoveSimple pos s) g =
                           Nothing -> gameAfterMove g pos posBehindOpp [closestPos]
                           -- position behind opponent piece is occupied
                           _ -> Left $ "Position behind opponent blocked."
-                  }
+                    }
             }
 
       else Left $ "That's not your piece."
@@ -197,8 +198,11 @@ gameEndTurn :: Game -> Game
 gameEndTurn g = Game (boardState g) (opponentOf $ activePlayer g) WaitingForMove (boardSize g)
 
 availableMoves :: Game -> [Move]
-availableMoves (Game boardSt activePlr WaitingForMove boardSz) =
-  undefined
+availableMoves g@(Game boardSt activePlr WaitingForMove _) =
+  let activePlrPieces = Map.filter (\pc -> ((owner pc) == activePlr)) boardSt
+      activePlrPositions = Map.keys activePlrPieces
+  in concat $ DL.map (availableMovesForPos g) activePlrPositions
+
 availableMoves g@(Game _ _ (ContinueMove p) _) =
   availableMovesForPos g p
 
@@ -216,7 +220,6 @@ isValidMove g m =
     WaitingForMove -> isValidMoveInitTurn g m
     ContinueMove _ -> isValidMoveContinuation g m
 
-
 isValidMoveInitTurn :: Game -> Move -> Bool
 isValidMoveInitTurn g (MoveSimple p dir) =
   case Map.lookup p (boardState g) of
@@ -224,7 +227,9 @@ isValidMoveInitTurn g (MoveSimple p dir) =
     Just piece -> let bsz = boardSize g
                       targetNear = shift bsz dir p
                       targetFar = shiftM bsz dir targetNear
-                  in isValidMoveImpl (boardState g) piece targetNear targetFar
+                  in if isForwardDirFor (owner piece) dir 
+                     then isValidMoveImpl (boardState g) piece targetNear targetFar
+                     else False
 
 isValidMoveImpl :: GameState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
 isValidMoveImpl _ _ Nothing _ = False
