@@ -161,8 +161,8 @@ applyMove (MoveSimple pos s) g =
                         Just posBehindOpp -> case Map.lookup posBehindOpp bst of
                           -- position behind opponent piece is empty
                           Nothing -> gameAfterMove g pos posBehindOpp [closestPos]
-                        -- position behind opponent piece is occupied
-                        _ -> Left $ "Position behind opponent blocked."
+                          -- position behind opponent piece is occupied
+                          _ -> Left $ "Position behind opponent blocked."
                   }
             }
 
@@ -176,25 +176,25 @@ gameAfterMove g posBegin posEnd removals =
     Nothing -> Left $ "There's no piece here"
     Just piece ->
       let newState = Map.insert posEnd piece (Map.delete posBegin (boardState g))
-          canContinue = ((length removals) > 0) && ((length $ availableMoves g) > 0)
+          gameIfContinue = (gameAdvanceState
+                            g
+                            (removePieces newState removals)
+                            (ContinueMove posEnd))
+          canContinue = ((length removals) > 0)
+                        && ((length $ availableContinuationsForPos gameIfContinue posEnd) > 0)
       in if canContinue
-      then Right (gameAdvanceState
-                  g
-                  (removePieces newState removals)
-                  (activePlayer g)
-                  (ContinueMove posEnd))
-      else Right (gameAdvanceState
-                  g
-                  (removePieces newState removals)
-                  (opponentOf $ activePlayer g)
-                  (WaitingForMove))
+      then Right gameIfContinue
+      else Right $ gameEndTurn gameIfContinue
 
 removePieces :: GameState -> [Pos] -> GameState
 removePieces gs [] = gs
 removePieces gs (x:xs) = removePieces (Map.delete x gs) xs
 
-gameAdvanceState :: Game -> GameState -> Player -> TurnState -> Game
-gameAdvanceState g gs plr turnSt = Game gs plr turnSt (boardSize g)
+gameAdvanceState :: Game -> GameState -> TurnState -> Game
+gameAdvanceState g gs turnSt = Game gs (activePlayer g) turnSt (boardSize g)
+
+gameEndTurn :: Game -> Game
+gameEndTurn g = Game (boardState g) (opponentOf $ activePlayer g) WaitingForMove (boardSize g)
 
 availableMoves :: Game -> [Move]
 availableMoves (Game boardSt activePlr WaitingForMove boardSz) =
@@ -205,6 +205,10 @@ availableMoves g@(Game _ _ (ContinueMove p) _) =
 availableMovesForPos :: Game -> Pos -> [Move]
 availableMovesForPos g p =
   DL.filter (isValidMove g) ([(MoveSimple p dir) | dir <- [NE,NW,SE,SW]])
+
+availableContinuationsForPos :: Game -> Pos -> [Move]
+availableContinuationsForPos g p =
+  DL.filter (isValidMoveContinuation g) ([(MoveSimple p dir) | dir <- [NE,NW,SE,SW]])
 
 isValidMove :: Game -> Move -> Bool
 isValidMove g m =
@@ -232,25 +236,30 @@ isValidMoveImpl gs p (Just pos1) (Just pos2) = case Map.lookup pos1 gs of
                      else Map.notMember pos2 gs
 
 isValidMoveContinuation :: Game -> Move -> Bool
-isValidMoveContinuation g (MoveSimple pos dir) =
-  let (ContinueMove p) = turnState g
-  in if p /= pos
-     then False
-     else let bsz = boardSize g
-              bst = boardState g
-              targetNear = shift bsz dir pos
-              targetFar = shiftM bsz dir targetNear
-          in isValidContinuation
-             bst
-             (DM.fromJust (Map.lookup pos bst))
-             targetNear
-             targetFar
-  
+isValidMoveContinuation g mv@(MoveSimple pos _) =
+  case turnState g of
+    (ContinueMove p) -> if p /= pos
+      then False
+      else isValidMoveContinuationDecompose g mv
+    WaitingForMove -> isValidMoveContinuationDecompose g mv
+      
 
-isValidContinuation :: GameState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
-isValidContinuation _ _ Nothing _ = False
-isValidContinuation _ _ _ Nothing = False
-isValidContinuation gs p (Just pos1) (Just pos2) =
+isValidMoveContinuationDecompose :: Game -> Move -> Bool
+isValidMoveContinuationDecompose g (MoveSimple pos dir) =
+  let bsz = boardSize g
+      bst = boardState g
+      targetNear = shift bsz dir pos
+      targetFar = shiftM bsz dir targetNear
+  in isValidContinuationImpl
+     bst
+     (DM.fromJust (Map.lookup pos bst))
+     targetNear
+     targetFar
+
+isValidContinuationImpl :: GameState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
+isValidContinuationImpl _ _ Nothing _ = False
+isValidContinuationImpl _ _ _ Nothing = False
+isValidContinuationImpl gs p (Just pos1) (Just pos2) =
   case Map.lookup pos1 gs of
     Nothing -> False
     Just otherPiece -> if (owner p) == (owner otherPiece)
