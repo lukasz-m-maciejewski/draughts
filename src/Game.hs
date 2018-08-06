@@ -116,7 +116,6 @@ validX c = if ((ord 'A') <= (ord c)) && ((ord c) <= (ord 'J'))
            else Nothing
 
 validY :: Char -> Maybe Int
--- validY (ord '0') = Just 10
 validY '0' = Just 10
 validY c = if ((ord '1') <= (ord c)) && ((ord c) <= (ord '9'))
            then Just ((ord c) - (ord '0'))
@@ -248,7 +247,6 @@ isValidMoveContinuation g mv@(MoveSimple pos _) =
       else isValidMoveContinuationDecompose g mv
     WaitingForMove -> isValidMoveContinuationDecompose g mv
       
-
 isValidMoveContinuationDecompose :: Game -> Move -> Bool
 isValidMoveContinuationDecompose g (MoveSimple pos dir) =
   let bsz = boardSize g
@@ -270,6 +268,10 @@ isValidContinuationImpl gs p (Just pos1) (Just pos2) =
     Just otherPiece -> if (owner p) == (owner otherPiece)
                        then False
                        else Map.notMember pos2 gs
-  
 
-
+-- refactoring direction
+-- 1) genrate all possible moves for individual pieces whether possible or not
+-- movesAt :: Game -> [Move]
+-- 2) try to applyMoves and generate a map
+-- considerMoves :: g -> [Move] -> (Map Move (Either String Game))
+-- 3) ask user for input and lookup the move in the map
