@@ -9,6 +9,8 @@ module Game
   , parseMove
   , availableMoves
   , availableMovesForPos
+  , movesFor
+  , movesToGames
   ) where
 
 import Position
@@ -94,7 +96,7 @@ instance Show SquareColor where
 emptyColor :: (Int, Int) -> SquareColor
 emptyColor (x, y) = if odd (x + y) then WhiteSquare else BlackSquare
 
-data Move = MoveSimple Pos BasePosShift deriving (Show, Eq)
+data Move = MoveSimple Pos BasePosShift deriving (Show, Eq, Ord)
 
 playMove :: Maybe Move -> Game -> Either (Game, String)  Game
 playMove Nothing g = Left (g, "No move provided.")
@@ -275,3 +277,18 @@ isValidContinuationImpl gs p (Just pos1) (Just pos2) =
 -- 2) try to applyMoves and generate a map
 -- considerMoves :: g -> [Move] -> (Map Move (Either String Game))
 -- 3) ask user for input and lookup the move in the map
+
+movesFor :: Game -> [Move]
+movesFor (Game boardSt activePlr WaitingForMove _) =
+  let activePlrPieces = Map.filter (\pc -> ((owner pc) == activePlr)) boardSt
+      activePlrPositions = Map.toList activePlrPieces
+  in concat $ DL.map movesForPiece activePlrPositions
+
+movesForPiece :: (Pos, Piece) -> [Move]
+movesForPiece (p, (Piece Pawn _)) = ([(MoveSimple p dir) | dir <- [NE,NW,SE,SW]])
+movesForPiece (_, (Piece King _)) = undefined
+
+type MovesToGames = Map.Map Move (Either String Game)
+
+movesToGames :: Game -> [Move] -> MovesToGames
+movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, (applyMove m g))) mvs

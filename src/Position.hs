@@ -4,7 +4,6 @@ module Position
   , isInside
   , BasePosShift (NW, NE, SW, SE)
   , PosShift (PosShift)
-  , shiftUnconstrained
   , shift
   , shiftM
   , shiftTrace
@@ -40,7 +39,7 @@ isInside (Pos x y) pc =
       yOk = (y >= yMin pc) && (y <= yMax pc)
   in xOk && yOk
 
-data BasePosShift = NW | NE | SW | SE deriving (Eq, Show)
+data BasePosShift = NW | NE | SW | SE deriving (Eq, Show, Ord)
 data PosShift = PosShift Int BasePosShift
 
 shiftUnconstrained :: BasePosShift -> Pos -> Pos
