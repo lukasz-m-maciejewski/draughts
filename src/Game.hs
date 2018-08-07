@@ -283,12 +283,37 @@ movesFor (Game boardSt activePlr WaitingForMove _) =
   let activePlrPieces = Map.filter (\pc -> ((owner pc) == activePlr)) boardSt
       activePlrPositions = Map.toList activePlrPieces
   in concat $ DL.map movesForPiece activePlrPositions
+movesFor (Game boardSt activePlr (ContinueMove pos) _) =
+  case Map.lookup pos boardSt of
+    Just piece -> if (owner piece) == activePlr
+                  then movesForPiece (pos, piece)
+                  else []
+    Nothing -> []
 
 movesForPiece :: (Pos, Piece) -> [Move]
 movesForPiece (p, (Piece Pawn _)) = ([(MoveSimple p dir) | dir <- [NE,NW,SE,SW]])
 movesForPiece (_, (Piece King _)) = undefined
 
-type MovesToGames = Map.Map Move (Either String Game)
+type GameOrErr = Either String Game
+type MovesToGames = Map.Map Move GameOrErr
 
 movesToGames :: Game -> [Move] -> MovesToGames
 movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, (applyMove m g))) mvs
+
+maybeMakeMove :: Game -> Move -> GameOrErr
+maybeMakeMove (Game boardSt plr WaitingForMove boardSz) (MoveSimple pos dir) =
+  let posForRegularMove = shift boardSz dir pos
+  in case posForRegularMove of
+    Nothing -> Left "Can't move outside the board"
+    Just nextPos ->
+      let pieceAtPos = Map.lookup nextPos boardSt
+      in case pieceAtPos of
+           Nothing ->
+             if not (isForwardDirFor plr dir)
+             then Left "pawn can't move backwards"
+             else undefined
+           Just piece ->
+             if (owner piece) == plr
+             then Left "player's piece already there"
+             else undefined
+           
