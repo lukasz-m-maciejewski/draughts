@@ -24,7 +24,7 @@ import Data.Maybe as DM
 
 import Data.Char
 
-type GameState = Map.Map Pos Piece
+type BoardState = Map.Map Pos Piece
 
 initialPositionsWhitePlayer :: [ (Pos, Piece) ]
 initialPositionsWhitePlayer =
@@ -40,13 +40,13 @@ initialPositionsBlackPlayer =
   , y <- [7..10]
   , even (x + y) ]
 
-initialPositions :: GameState
+initialPositions :: BoardState
 initialPositions = Map.fromList (initialPositionsWhitePlayer
                                  ++ initialPositionsBlackPlayer)
 
 data TurnState = WaitingForMove | ContinueMove Pos deriving (Eq, Show)
 
-data Game = Game { boardState :: GameState
+data Game = Game { boardState :: BoardState
                  , activePlayer :: Player
                  , turnState :: TurnState
                  , boardSize :: PosConstraint
@@ -66,7 +66,7 @@ putMaybeGame (Just g) = putGame g
 makeGame :: Game
 makeGame = Game initialPositions WhitePlayer WaitingForMove (PosConstraint 1 10 1 10)
 
-boardForState :: GameState -> String
+boardForState :: BoardState -> String
 boardForState stateMap =
   let grid = finiteCoordGrid 10
       displayFun = (\(x, y) -> case (Map.lookup (Pos x y) stateMap) of
@@ -188,11 +188,11 @@ gameAfterMove g posBegin posEnd removals =
       then Right gameIfContinue
       else Right $ gameEndTurn gameIfContinue
 
-removePieces :: GameState -> [Pos] -> GameState
+removePieces :: BoardState -> [Pos] -> BoardState
 removePieces gs [] = gs
 removePieces gs (x:xs) = removePieces (Map.delete x gs) xs
 
-gameAdvanceState :: Game -> GameState -> TurnState -> Game
+gameAdvanceState :: Game -> BoardState -> TurnState -> Game
 gameAdvanceState g gs turnSt = Game gs (activePlayer g) turnSt (boardSize g)
 
 gameEndTurn :: Game -> Game
@@ -228,11 +228,11 @@ isValidMoveInitTurn g (MoveSimple p dir) =
     Just piece -> let bsz = boardSize g
                       targetNear = shift bsz dir p
                       targetFar = shiftM bsz dir targetNear
-                  in if isForwardDirFor (owner piece) dir 
+                  in if isForwardDirFor (owner piece) dir
                      then isValidMoveImpl (boardState g) piece targetNear targetFar
                      else False
 
-isValidMoveImpl :: GameState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
+isValidMoveImpl :: BoardState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
 isValidMoveImpl _ _ Nothing _ = False
 isValidMoveImpl gs _ (Just pos) Nothing = Map.notMember pos gs
 isValidMoveImpl gs p (Just pos1) (Just pos2) = case Map.lookup pos1 gs of
@@ -248,7 +248,7 @@ isValidMoveContinuation g mv@(MoveSimple pos _) =
       then False
       else isValidMoveContinuationDecompose g mv
     WaitingForMove -> isValidMoveContinuationDecompose g mv
-      
+
 isValidMoveContinuationDecompose :: Game -> Move -> Bool
 isValidMoveContinuationDecompose g (MoveSimple pos dir) =
   let bsz = boardSize g
@@ -261,7 +261,7 @@ isValidMoveContinuationDecompose g (MoveSimple pos dir) =
      targetNear
      targetFar
 
-isValidContinuationImpl :: GameState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
+isValidContinuationImpl :: BoardState -> Piece -> Maybe Pos -> Maybe Pos -> Bool
 isValidContinuationImpl _ _ Nothing _ = False
 isValidContinuationImpl _ _ _ Nothing = False
 isValidContinuationImpl gs p (Just pos1) (Just pos2) =
@@ -277,6 +277,9 @@ isValidContinuationImpl gs p (Just pos1) (Just pos2) =
 -- 2) try to applyMoves and generate a map
 -- considerMoves :: g -> [Move] -> (Map Move (Either String Game))
 -- 3) ask user for input and lookup the move in the map
+
+multiverseFor :: Game -> MovesToGames
+multiverseFor g = movesToGames g $ movesFor g
 
 movesFor :: Game -> [Move]
 movesFor (Game boardSt activePlr WaitingForMove _) =
@@ -298,22 +301,44 @@ type GameOrErr = Either String Game
 type MovesToGames = Map.Map Move GameOrErr
 
 movesToGames :: Game -> [Move] -> MovesToGames
-movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, (applyMove m g))) mvs
+movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, (maybeMakeMove g m))) mvs
 
 maybeMakeMove :: Game -> Move -> GameOrErr
 maybeMakeMove (Game boardSt plr WaitingForMove boardSz) (MoveSimple pos dir) =
-  let posForRegularMove = shift boardSz dir pos
-  in case posForRegularMove of
+  case shift boardSz dir pos of
     Nothing -> Left "Can't move outside the board"
-    Just nextPos ->
-      let pieceAtPos = Map.lookup nextPos boardSt
+    Just posForMove ->
+      let pieceAtPos = Map.lookup posForMove boardSt
       in case pieceAtPos of
-           Nothing ->
-             if not (isForwardDirFor plr dir)
-             then Left "pawn can't move backwards"
-             else undefined
-           Just piece ->
-             if (owner piece) == plr
-             then Left "player's piece already there"
-             else undefined
-           
+        Nothing ->
+          if not (isForwardDirFor plr dir)
+          then Left "pawn can't move backwards"
+          else Right $ Game (unsafeAdvancePiece boardSt pos posForMove) (opponentOf plr) WaitingForMove boardSz
+        Just piece ->
+          if (owner piece) == plr
+          then Left "player's own piece is in the way"
+          else
+            case shift boardSz dir posForMove of
+              Nothing -> Left "can't jump over the opponent - no board there"
+              Just posForJump ->
+                case Map.lookup posForJump boardSt of
+                  Just _ -> Left "jump blocked by another piece"
+                  Nothing ->
+                    let maybeEndTurn = Game (unsafeAdvancePiece (Map.delete posForMove boardSt) pos posForJump) (plr) (ContinueMove posForJump) boardSz
+                    in Right $ endTurnOrWaitForContinuation maybeEndTurn
+
+
+maybeMakeMove (Game _ _ (ContinueMove _) _) (MoveSimple _ _ ) = undefined
+
+unsafeAdvancePiece :: BoardState -> Pos -> Pos -> BoardState
+unsafeAdvancePiece bs source target =
+  let piece = fromJust $ Map.lookup source bs
+  in Map.insert target piece (Map.delete source bs)
+
+endTurnOrWaitForContinuation :: Game -> Game
+endTurnOrWaitForContinuation g = if not $ Map.null (Map.filter eitherIsRight (multiverseFor g))
+                                 then g
+                                 else Game (boardState g) (opponentOf $ activePlayer g) WaitingForMove (boardSize g)
+
+eitherIsRight :: Either a b -> Bool
+eitherIsRight = either (\_ -> False) (\_ -> True)
