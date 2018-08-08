@@ -12,12 +12,12 @@ main = do
 
 playGame :: Either (Game, String) Game -> IO ()
 playGame (Left (g, s)) = do
-  putStrLn $ show g
+  print g
   putStrLn $ "ERROR!" ++ s
   playTurn g
 
 playGame (Right g) = do
-  putStrLn $ show g
+  print g
   playTurn g
 
 playTurn :: Game -> IO ()
