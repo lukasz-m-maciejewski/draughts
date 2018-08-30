@@ -13,6 +13,7 @@ module Game
 import Position
 import Pieces
 import Lib
+import Game.Move
 
 import qualified Data.Map as Map
 import qualified Text.Printf as TP
@@ -95,8 +96,6 @@ instance Show SquareColor where
 emptyColor :: (Int, Int) -> SquareColor
 emptyColor (x, y) = if odd (x + y) then WhiteSquare else BlackSquare
 
-data Move = MoveSimple Pos BasePosShift deriving (Show, Eq, Ord)
-
 playMove :: Maybe Move -> Game -> Either (Game, String)  Game
 playMove Nothing g = Left (g, "No move provided.")
 playMove (Just m) g =
@@ -104,32 +103,6 @@ playMove (Just m) g =
     Nothing -> Left (g, "illegal move")
     Just (Left s) -> Left (g, s)
     Just (Right newGameState) -> Right newGameState
-
-parseMove :: String -> Maybe Move
-parseMove s = do
-  { x <- validX (s !! 0)
-  ; y <- validY (s !! 1)
-  ; dir <- validDir (s !! 3) (s !! 4)
-  ; Just (MoveSimple (Pos x y) dir)
-  }
-
-validX :: Char -> Maybe Int
-validX c = if ((ord 'A') <= (ord c)) && ((ord c) <= (ord 'J'))
-           then Just ((ord c) - (ord 'A') + 1)
-           else Nothing
-
-validY :: Char -> Maybe Int
-validY '0' = Just 10
-validY c = if ((ord '1') <= (ord c)) && ((ord c) <= (ord '9'))
-           then Just ((ord c) - (ord '0'))
-           else Nothing
-
-validDir :: Char -> Char -> Maybe BasePosShift
-validDir 'N' 'E' = Just NE
-validDir 'N' 'W' = Just NW
-validDir 'S' 'E' = Just SE
-validDir 'S' 'W' = Just SW
-validDir _ _ = Nothing
 
 
 type GameOrErr = Either String Game
@@ -217,7 +190,7 @@ maybeMakeMove (Game boardSt plr (ContinueMove basePos) boardSz) (MoveSimple pos 
                                        (ContinueMove posJumpTo)
                                        boardSz
                     in Right $ endTurnOrWaitForContinuation maybeEndTurn
-        
+
 
 unsafeAdvancePiece :: BoardState -> Pos -> Pos -> BoardState
 unsafeAdvancePiece bs source target =
