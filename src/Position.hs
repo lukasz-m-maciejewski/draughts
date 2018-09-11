@@ -1,20 +1,6 @@
-module Position
-  ( Pos (Pos, x_, y_)
-  , PosConstraint (PosConstraint)
-  , isInside
-  , BasePosShift (NW, NE, SW, SE)
-  , PosShift (PosShift)
-  , shift
-  , shiftM
-  , shiftTrace
-  ) where
+module Position where
 
-data Pos = Pos {
-  x_ :: Int,
-  y_ :: Int
-  } deriving (Eq, Ord)
-instance Show Pos where
-  show (Pos x y) = "(" ++ (show x) ++ ", " ++ (show y) ++ ")"
+import Game.Pos
 
 data PosConstraint = PosConstraint {
   xMin :: Int,
@@ -39,15 +25,6 @@ isInside (Pos x y) pc =
       yOk = (y >= yMin pc) && (y <= yMax pc)
   in xOk && yOk
 
-data BasePosShift = NW | NE | SW | SE deriving (Eq, Show, Ord)
-data PosShift = PosShift Int BasePosShift
-
-shiftUnconstrained :: BasePosShift -> Pos -> Pos
-shiftUnconstrained NW (Pos x y)  = Pos (x-1) (y+1)
-shiftUnconstrained NE (Pos x y) = Pos (x+1) (y+1)
-shiftUnconstrained SW (Pos x y) = Pos (x-1) (y-1)
-shiftUnconstrained SE (Pos x y) = Pos (x+1) (y-1)
-
 shift :: PosConstraint -> BasePosShift -> Pos -> Maybe Pos
 shift pc ps p =
   let n = shiftUnconstrained ps p
@@ -62,5 +39,4 @@ shiftM _  _  Nothing  = Nothing
 shiftTrace :: PosConstraint -> PosShift -> Pos ->  [Maybe Pos]
 shiftTrace pc (PosShift n bs) p =
   let functList = map (shiftM pc) (take n $ repeat bs)
-  in scanr ($) (Just p) functList 
-
+  in scanr ($) (Just p) functList

@@ -14,13 +14,12 @@ import Position
 import Pieces
 import Lib
 import Game.Move
+import Game.Pos
 
 import qualified Data.Map as Map
 import qualified Text.Printf as TP
 import qualified Data.List as DL
 import qualified Data.Maybe as DM
-
-import Data.Char
 
 type BoardState = Map.Map Pos Piece
 

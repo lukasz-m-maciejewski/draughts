@@ -1,32 +1,56 @@
 module Game.Move where
 
-import Position
+import Game.Pos
 import Data.Char
+import Text.Parsec
 
 data Move = MoveSimple Pos BasePosShift deriving (Show, Eq, Ord)
 
 parseMove :: String -> Maybe Move
-parseMove s = do
-  { x <- validX (s !! 0)
-  ; y <- validY (s !! 1)
-  ; dir <- validDir (s !! 3) (s !! 4)
-  ; Just (MoveSimple (Pos x y) dir)
-  }
+parseMove s = undefined
 
-validX :: Char -> Maybe Int
-validX c = if ((ord 'A') <= (ord c)) && ((ord c) <= (ord 'J'))
-           then Just ((ord c) - (ord 'A') + 1)
-           else Nothing
 
-validY :: Char -> Maybe Int
-validY '0' = Just 10
-validY c = if ((ord '1') <= (ord c)) && ((ord c) <= (ord '9'))
-           then Just ((ord c) - (ord '0'))
-           else Nothing
+inSequence :: Parsec String st a -> Parsec String st b -> Parsec String st (a, b)
+inSequence p1 p2 = do
+  o1 <- try p1
+  o2 <- p2
+  return (o1, o2)
 
-validDir :: Char -> Char -> Maybe BasePosShift
-validDir 'N' 'E' = Just NE
-validDir 'N' 'W' = Just NW
-validDir 'S' 'E' = Just SE
-validDir 'S' 'W' = Just SW
-validDir _ _ = Nothing
+basePosShiftParser :: Parsec String st BasePosShift
+basePosShiftParser = readBasePosShift <$> inSequence (oneOf "NS") (oneOf "EW")
+  where readBasePosShift ('N', 'E') = NE
+        readBasePosShift ('N', 'W') = NW
+        readBasePosShift ('S', 'E') = SE
+        readBasePosShift ('S', 'W') = SW
+        readBasePosShift a = error ("parser should never contain such pattern:" ++ (show a))
+
+positiveNatural :: Parsec String st Int
+positiveNatural = foldl (\a i -> a * 10 + digitToInt i) 0 <$> many1 digit
+
+chessPosPreparser :: Parsec String st (Int, Int)
+chessPosPreparser = inSequence (digitToX <$> oneOf "ABCDEFGHIJ") positiveNatural
+  where digitToX :: Char -> Int
+        digitToX c = 1 + ord c - ord 'A'
+
+moveSimpleParser :: Parsec String st ((Int, Int),  BasePosShift)
+moveSimpleParser = do
+  _ <- many (oneOf " \t")
+  o1 <- try chessPosPreparser
+  _ <- many (oneOf " \t")
+  o2 <- basePosShiftParser
+  _ <- many (oneOf " \t")
+  return (o1, o2)
+
+ifNoError :: Either a b -> Maybe b
+ifNoError = either (const Nothing) return
+
+parseMoveSimple :: (Int -> Maybe Int) -> String -> Maybe Move
+parseMoveSimple posTest s = do
+  (p, bs) <- ifNoError (parse moveSimpleParser "" s)
+  MoveSimple <$> buildPos posTest p <*> pure bs
+
+validPosElement :: Int -> Maybe Int
+validPosElement x = if x > 0 && x <= 10 then Just x else Nothing
+
+buildPos :: (Int -> Maybe Int) -> (Int, Int) -> Maybe Pos
+buildPos test (x, y) = Pos <$> test x <*> test y

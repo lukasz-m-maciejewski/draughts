@@ -6,7 +6,7 @@ module Pieces
   , Piece (Piece, kind, owner)
   ) where
 
-import Position
+import Game.Pos
 
 data Player = WhitePlayer | BlackPlayer deriving (Eq, Show)
 
