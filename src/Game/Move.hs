@@ -6,7 +6,10 @@ import Text.Parsec
 
 import Utility
 
-data Move = MoveSimple Pos BasePosShift deriving (Show, Eq, Ord)
+data Move = MoveSimple Pos Direction
+          | LineMove Pos Pos
+          | PolyLineMove [Pos]
+          deriving (Show, Eq, Ord)
 
 parseMove :: String -> Maybe Move
 parseMove = parseMoveSimple validPosElement
@@ -19,8 +22,7 @@ parseMoveSimple posTest s = do
     buildPos :: (Int -> Maybe Int) -> (Int, Int) -> Maybe Pos
     buildPos test (x, y) = Pos <$> test x <*> test y
 
-
-moveSimpleParser :: Parsec String st ((Int, Int),  BasePosShift)
+moveSimpleParser :: Parsec String st ((Int, Int),  Direction)
 moveSimpleParser = do
   _ <- many (oneOf " \t")
   o1 <- try chessPosPreparser
@@ -36,7 +38,7 @@ chessPosPreparser = inSequence (digitToX <$> oneOf "ABCDEFGHIJ") positiveNatural
         positiveNatural :: Parsec String st Int
         positiveNatural = foldl (\a i -> a * 10 + digitToInt i) 0 <$> many1 digit
 
-basePosShiftParser :: Parsec String st BasePosShift
+basePosShiftParser :: Parsec String st Direction
 basePosShiftParser = readBasePosShift <$> inSequence (oneOf "NS") (oneOf "EW")
   where readBasePosShift ('N', 'E') = NE
         readBasePosShift ('N', 'W') = NW

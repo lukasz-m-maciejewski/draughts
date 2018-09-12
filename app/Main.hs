@@ -1,6 +1,7 @@
 module Main where
 
 import Game
+import Game.Move
 
 import System.IO
 import System.Console.Readline

@@ -14,7 +14,7 @@ opponentOf :: Player -> Player
 opponentOf WhitePlayer = BlackPlayer
 opponentOf BlackPlayer = WhitePlayer
 
-isForwardDirFor :: Player -> BasePosShift -> Bool
+isForwardDirFor :: Player -> Direction -> Bool
 isForwardDirFor WhitePlayer NE = True
 isForwardDirFor WhitePlayer NW = True
 isForwardDirFor BlackPlayer SE = True

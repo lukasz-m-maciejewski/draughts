@@ -8,6 +8,7 @@ data PosConstraint = PosConstraint {
   yMin :: Int,
   yMax :: Int
   } deriving (Eq)
+
 instance Show PosConstraint where
   show pc = "("
             ++ (show $ xMin pc)
@@ -25,14 +26,20 @@ isInside (Pos x y) pc =
       yOk = (y >= yMin pc) && (y <= yMax pc)
   in xOk && yOk
 
-shift :: PosConstraint -> BasePosShift -> Pos -> Maybe Pos
+validPos :: PosConstraint -> Pos -> Maybe Pos
+validPos pc p@(Pos x y) =
+  let xOk = (x >= xMin pc) && (x <= xMax pc)
+      yOk = (y >= yMin pc) && (y <= yMax pc)
+  in if xOk && yOk then Just p else Nothing
+
+shift :: PosConstraint -> Direction -> Pos -> Maybe Pos
 shift pc ps p =
   let n = shiftUnconstrained ps p
   in if isInside n pc
      then Just n
      else Nothing
 
-shiftM :: PosConstraint -> BasePosShift -> Maybe Pos -> Maybe Pos
+shiftM :: PosConstraint -> Direction -> Maybe Pos -> Maybe Pos
 shiftM pc ps (Just p) = shift pc ps p
 shiftM _  _  Nothing  = Nothing
 

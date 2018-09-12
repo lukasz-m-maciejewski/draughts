@@ -1,20 +1,11 @@
-module Game
-  ( Game (Game)
-  , makeGame
-  , putGame
-  , putMaybeGame
-  , boardForState
-  , playMove
-  , parseMove
-  , movesFor
-  , movesToGames
-  ) where
+module Game where
 
 import Position
 import Pieces
 import Lib
 import Game.Move
 import Game.Pos
+import Utility
 
 import qualified Data.Map as Map
 import qualified Text.Printf as TP
@@ -103,7 +94,6 @@ playMove (Just m) g =
     Just (Left s) -> Left (g, s)
     Just (Right newGameState) -> Right newGameState
 
-
 type GameOrErr = Either String Game
 type MovesToGames = Map.Map Move GameOrErr
 
@@ -163,6 +153,7 @@ maybeMakeMove (Game boardSt plr WaitingForMove boardSz) (MoveSimple pos dir) =
                                        boardSz
                     in Right $ endTurnOrWaitForContinuation maybeEndTurn
 
+-- maybeMakeMove :: Game -> Move -> GameOrErr
 maybeMakeMove (Game boardSt plr (ContinueMove basePos) boardSz) (MoveSimple pos dir) =
   if basePos /= pos then Left "Cannot move this piece in a contunuation"
   else case shift boardSz dir pos of
@@ -189,7 +180,39 @@ maybeMakeMove (Game boardSt plr (ContinueMove basePos) boardSz) (MoveSimple pos 
                                        (ContinueMove posJumpTo)
                                        boardSz
                     in Right $ endTurnOrWaitForContinuation maybeEndTurn
+-- maybeMakeMove :: Game -> Move -> GameOrErr
+maybeMakeMove g@(Game _ _ WaitingForMove _) m@(LineMove p0 p1) =
+  do
+    vp0 <- nothingIsAnError (validPos (boardSize g) p0) "invalid start position"
+    vp1 <- nothingIsAnError (validPos (boardSize g) p1) "invalid end position"
+    piece <- nothingIsAnError (Map.lookup vp0 (boardState g)) "no piece at start position"
+             >>= validMoveGeometry vp0 vp1
+             >>= validOwner (activePlayer g)
+    case kind piece of
+      Pawn -> maybeMakePawnMove g m
+      King -> maybeMakeKingMove g m
+  where
+    maybeMakePawnMove :: Game -> Move -> GameOrErr
+    maybeMakePawnMove g (LineMove p0' p1') =
+      do
+        d <- nothingIsAnError (diagonalDist p0' p1') "move must be along a diagonal"
+        case d of
+          1 -> undefined
+          2 -> undefined
+          _ -> Left "logic error"
+    maybeMakeKingMove :: Game -> Move -> GameOrErr
+    maybeMakeKingMove = undefined
+    validMoveGeometry :: Pos -> Pos -> Piece -> Either String Piece
+    validMoveGeometry p0' p1' p =
+      do
+        d <- nothingIsAnError (diagonalDist p0' p1') "move must be along a diagonal"
+        case kind p of
+          Pawn -> if d == 1 || d == 2 then Right p else Left "error"
+          King -> Right p
+    validOwner :: Player -> Piece -> Either String Piece
+    validOwner p pc = if p == owner pc then Right pc else Left "attempting to move opponents piece"
 
+maybeMakeMove _ _ = undefined
 
 unsafeAdvancePiece :: BoardState -> Pos -> Pos -> BoardState
 unsafeAdvancePiece bs source target =
@@ -204,6 +227,3 @@ endTurnOrWaitForContinuation g = if not $ Map.null (Map.filter eitherIsRight (mu
                                       (opponentOf $ activePlayer g)
                                       WaitingForMove
                                       (boardSize g)
-
-eitherIsRight :: Either a b -> Bool
-eitherIsRight = either (const False) (const True)
