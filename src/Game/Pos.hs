@@ -14,4 +14,6 @@ shiftUnconstrained SW (Pos x y) = Pos (x-1) (y-1)
 shiftUnconstrained SE (Pos x y) = Pos (x+1) (y-1)
 
 diagonalDist :: Pos -> Pos -> Maybe Int
-diagonalDist (Pos x1 y1) (Pos x2 y2) = if abs (y2 - y1) == abs (x2 - x1) then Just $ abs (x2 - x1) else Nothing
+diagonalDist (Pos x1 y1) (Pos x2 y2) =
+  if abs (y2 - y1) == abs (x2 - x1)
+  then Just $ abs (x2 - x1) else Nothing
