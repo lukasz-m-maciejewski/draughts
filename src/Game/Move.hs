@@ -79,12 +79,7 @@ jumpoverPos (LineMove s t) = do
   d <- diagonalDist s t
   if d == 1 then Nothing else Just (Pos xn yn)
  where
-  sgn :: Int -> Int
-  sgn x | x > 0  = 1
-        | x < 0  = -1
-        | x == 0 = 0
-  sgn _ = error "umphf"
-  f a0 a1 = a0 + (abs (a1 - a0) - 1) * sgn (a1 - a0)
+  f a0 a1 = a0 + (abs (a1 - a0) - 1) * signum (a1 - a0)
   xn = f (x_ s) (x_ t)
   yn = f (y_ s) (y_ t)
 jumpoverPos _ = Nothing

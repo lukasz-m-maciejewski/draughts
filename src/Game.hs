@@ -303,12 +303,13 @@ applyMove target game@(GameWithSelectedPiece _ (Piece Pawn _) _) = maybe
   applyAsJump :: Pos -> GameWithSelectedPiece -> Maybe GameState
   applyAsJump t (GameWithSelectedPiece b pc s) = do
     d <- diagonalDist s t
-    if d /= 2
+    if validJumpDistanceFor (kind pc) d
       then Nothing
       else do
         board <-
           targetPosIsValid t b
           >>= targetPosIsUnoccupied t
+          >>= moveTraceIsUnoccupied (tail $ moveTraceReversed (LineMove s t))
           >>= removeOpponentPiece (LineMove s t) (owner pc)
           >>= placePieceAtBoard t pc
         return $ PieceSelected board pc t
@@ -316,14 +317,25 @@ applyMove target game@(GameWithSelectedPiece _ (Piece Pawn _) _) = maybe
   applyAsMove :: Pos -> GameWithSelectedPiece -> Maybe GameState
   applyAsMove t (GameWithSelectedPiece b pc s) = do
     d <- diagonalDist s t
-    if d /= 1
+    if validMoveDistanceFor (kind pc) d
       then Nothing
       else do
         board <-
           targetPosIsValid t b
           >>= targetPosIsUnoccupied t
+          >>= moveTraceIsUnoccupied (moveTraceReversed (LineMove s t))
           >>= placePieceAtBoard t pc
         return $ Idle board (opponentOf (owner pc))
+
+  validJumpDistanceFor :: PieceKind -> Int -> Bool
+  validJumpDistanceFor k d = case k of
+    King -> d >= 2
+    Pawn -> d == 2
+
+  validMoveDistanceFor :: PieceKind -> Int -> Bool
+  validMoveDistanceFor k d = case k of
+    King -> d >= 1
+    Pawn -> d == 1
 
   targetPosIsValid :: Pos -> Board -> Maybe Board
   targetPosIsValid p b = if isInside p (size b) then Just b else Nothing
@@ -342,9 +354,9 @@ applyMove target game@(GameWithSelectedPiece _ (Piece Pawn _) _) = maybe
   placePieceAtBoard pos piece b =
     return $ Board (Map.insert pos piece (state b)) (size b)
 
-
-applyMove _ (GameWithSelectedPiece _ (Piece King _) _) = undefined
-
+  moveTraceIsUnoccupied :: [Pos] -> Board -> Maybe Board
+  moveTraceIsUnoccupied ps b =
+    if any (\el -> Map.member el (state b)) ps then Nothing else Just b
 
 -- check is move direction valid
 
