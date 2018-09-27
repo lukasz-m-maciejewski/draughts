@@ -1,10 +1,10 @@
 module Main where
 
-import Game
-import Game.Move
+import           Game
+import           Game.Move
 
-import System.IO
-import System.Console.Readline
+import           System.IO
+import           System.Console.Readline
 
 main :: IO ()
 main = do
@@ -25,7 +25,7 @@ playTurn :: Game -> IO ()
 playTurn g = do
   input <- readline "Your Move> "
   case input of
-    Nothing -> playGame (Left (g, "Invalid input"))
-    Just "quit" -> return ()
-    Just "exit" -> return ()
+    Nothing      -> playGame (Left (g, "Invalid input"))
+    Just "quit"  -> return ()
+    Just "exit"  -> return ()
     Just moveStr -> playGame (playMove (parseMove moveStr) g)

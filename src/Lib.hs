@@ -1,13 +1,14 @@
 module Lib
-    ( Location (Location)
-    , Grid
-    , zipOverGrid
-    , zipOverGridWith
-    , mapOverGrid
-    ) where
+  ( Location(Location)
+  , Grid
+  , zipOverGrid
+  , zipOverGridWith
+  , mapOverGrid
+  )
+where
 
-import Text.Printf as TP
-import Data.Char as DC
+import           Text.Printf                   as TP
+import           Data.Char                     as DC
 
 type Grid a = [[a]]
 
@@ -26,7 +27,8 @@ instance Show Location where
   show = fmtLocAlNum
 
 fmtLocAlNum :: Location -> String
-fmtLocAlNum l = "(" ++ [xPos2Char $ xpos l] ++ (TP.printf "%02d" $ ypos l) ++ ")"
+fmtLocAlNum l =
+  "(" ++ [xPos2Char $ xpos l] ++ (TP.printf "%02d" $ ypos l) ++ ")"
 
 xPos2Char :: Int -> Char
 xPos2Char d = DC.chr ((DC.ord 'A') + (d - 1))

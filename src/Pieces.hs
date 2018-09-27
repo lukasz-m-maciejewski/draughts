@@ -1,12 +1,13 @@
 module Pieces
-  ( Player (WhitePlayer, BlackPlayer)
+  ( Player(WhitePlayer, BlackPlayer)
   , opponentOf
   , isForwardDirFor
-  , PieceKind (Pawn, King)
-  , Piece (Piece, kind, owner)
-  ) where
+  , PieceKind(Pawn, King)
+  , Piece(Piece, kind, owner)
+  )
+where
 
-import Game.Pos
+import           Game.Pos
 
 data Player = WhitePlayer | BlackPlayer deriving (Eq, Show)
 
@@ -19,7 +20,7 @@ isForwardDirFor WhitePlayer NE = True
 isForwardDirFor WhitePlayer NW = True
 isForwardDirFor BlackPlayer SE = True
 isForwardDirFor BlackPlayer SW = True
-isForwardDirFor _ _ = False
+isForwardDirFor _           _  = False
 
 data PieceKind = Pawn | King deriving (Eq, Show)
 
