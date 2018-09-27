@@ -133,16 +133,8 @@ type MovesToGames = Map.Map Move GameOrErr
 multiverseFor :: Game -> MovesToGames -- TODO: filter jumps when jump is available
 multiverseFor g = movesToGames g $ movesFor g
 
-movesFor :: Game -> [Move]
-movesFor (Game boardSt activePlr WaitingForMove _) =
-  let activePlrPieces    = Map.filter (\pc -> owner pc == activePlr) boardSt
-      activePlrPositions = Map.toList activePlrPieces
-  in  concatMap movesForPiece activePlrPositions
-movesFor (Game boardSt activePlr (ContinueMove pos) _) =
-  case Map.lookup pos boardSt of
-    Just piece ->
-      if owner piece == activePlr then movesForPiece (pos, piece) else []
-    Nothing -> []
+movesFor :: GameState -> [Move]
+movesFor = undefined
 
 movesForPiece :: (Pos, Piece) -> [Move]
 movesForPiece (p, Piece Pawn _) =
@@ -153,121 +145,8 @@ movesToGames :: Game -> [Move] -> MovesToGames
 movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, maybeMakeMove g m)) mvs
 
 maybeMakeMove :: Game -> Move -> GameOrErr
-maybeMakeMove (Game boardSt plr WaitingForMove boardSz) (MoveSimple pos dir) =
-  case shift boardSz dir pos of
-    Nothing -> Left "Can't move outside the board"
-    Just posForMove ->
-      let pieceAtPos = Map.lookup posForMove boardSt
-      in
-        case pieceAtPos of
-          Nothing -> if not (isForwardDirFor plr dir)
-            then Left "pawn can't move backwards"
-            else Right $ Game (unsafeAdvancePiece boardSt pos posForMove)
-                              (opponentOf plr)
-                              WaitingForMove
-                              boardSz
-          Just piece -> if owner piece == plr
-            then Left "player's own piece is in the way"
-            else case shift boardSz dir posForMove of
-              Nothing -> Left "can't jump over the opponent - no board there"
-              Just posForJump -> case Map.lookup posForJump boardSt of
-                Just _ -> Left "jump blocked by another piece"
-                Nothing ->
-                  let maybeEndTurn = Game
-                        (unsafeAdvancePiece (Map.delete posForMove boardSt)
-                                            pos
-                                            posForJump
-                        )
-                        plr
-                        (ContinueMove posForJump)
-                        boardSz
-                  in  Right $ endTurnOrWaitForContinuation maybeEndTurn
+maybeMakeMove = undefined
 
--- maybeMakeMove :: Game -> Move -> GameOrErr
-maybeMakeMove (Game boardSt plr (ContinueMove basePos) boardSz) (MoveSimple pos dir)
-  = if basePos /= pos
-    then Left "Cannot move this piece in a contunuation"
-    else case shift boardSz dir pos of
-      Nothing          -> Left "can't move outside the board"
-      Just posJumpOver -> case Map.lookup posJumpOver boardSt of
-        Nothing    -> Left "Continuation only available when jumping"
-        Just piece -> if owner piece == plr
-          then Left "Can't jump over own piece"
-          else case shift boardSz dir posJumpOver of
-            Nothing        -> Left "Can't jump overboard"
-            Just posJumpTo -> case Map.lookup posJumpTo boardSt of
-              Just _ -> Left "Jump target blocked"
-              Nothing ->
-                let maybeEndTurn = Game
-                      (unsafeAdvancePiece (Map.delete posJumpOver boardSt)
-                                          pos
-                                          posJumpTo
-                      )
-                      plr
-                      (ContinueMove posJumpTo)
-                      boardSz
-                in  Right $ endTurnOrWaitForContinuation maybeEndTurn
--- maybeMakeMove :: Game -> Move -> GameOrErr
-maybeMakeMove game@(Game _ _ WaitingForMove _) m@(LineMove p0 p1) = do
-  vp0 <- nothingIsAnError (validPos (boardSize game) p0)
-                          "invalid start position"
-  vp1 <- nothingIsAnError (validPos (boardSize game) p1) "invalid end position"
-  piece <-
-    nothingIsAnError (Map.lookup vp0 (boardState game))
-                     "no piece at start position"
-    >>= validMoveGeometry vp0 vp1
-    >>= validOwner (activePlayer game)
-    >>= validDirection (activePlayer game) (directionOf m)
-  case kind piece of
-    Pawn -> maybeMakePawnMove game m
-    King -> maybeMakeKingMove game m
- where
-  maybeMakePawnMove :: Game -> Move -> GameOrErr
-  maybeMakePawnMove g (LineMove p0' p1') = do
-    d <- nothingIsAnError (diagonalDist p0' p1') "move must be along a diagonal"
-    case d of
-      1 -> Right $ endTurn $ replaceBoardState
-        (unsafeAdvancePiece (boardState g) p0' p1')
-        g
-      2 -> undefined
-      _ -> Left "logic error"
-  maybeMakePawnMove _ _ = Left "logic error"
-
-  maybeMakeKingMove :: Game -> Move -> GameOrErr
-  maybeMakeKingMove = undefined
-  validMoveGeometry :: Pos -> Pos -> Piece -> Either String Piece
-  validMoveGeometry p0' p1' p = do
-    d <- nothingIsAnError (diagonalDist p0' p1') "move must be along a diagonal"
-    case kind p of
-      Pawn -> if d == 1 || d == 2 then Right p else Left "error"
-      King -> Right p
-  validOwner :: Player -> Piece -> Either String Piece
-  validOwner p pc = if p == owner pc
-    then Right pc
-    else Left "attempting to move opponents piece"
-  validDirection :: Player -> Maybe Direction -> Piece -> Either String Piece
-  validDirection = undefined
-
-maybeMakeMove _ _ = undefined
-
-unsafeAdvancePiece :: BoardState -> Pos -> Pos -> BoardState
-unsafeAdvancePiece bs source target =
-  let piece = DM.fromJust $ Map.lookup source bs
-  in  Map.insert target piece (Map.delete source bs)
-
-endTurnOrWaitForContinuation :: Game -> Game
-endTurnOrWaitForContinuation g =
-  if not $ Map.null (Map.filter eitherIsRight (multiverseFor g))
-    then g
-    else Game (boardState g)
-              (opponentOf $ activePlayer g)
-              WaitingForMove
-              (boardSize g)
--- data Game = Game { boardState :: BoardState
---                  , activePlayer :: Player
---                  , turnState :: TurnState
---                  , boardSize :: PosConstraint
---                  }
 endTurn :: Game -> Game
 endTurn (Game s p _ b) = Game s (opponentOf p) WaitingForMove b
 
@@ -295,7 +174,7 @@ selectPiece _ _ = error "umphf"
 --               | PieceSelected Board Piece Pos
 
 applyMove :: Pos -> GameWithSelectedPiece -> Either String GameState
-applyMove target game@(GameWithSelectedPiece _ (Piece Pawn _) _) = maybe
+applyMove target game = maybe
   (Left "unable to apply move")
   Right
   (applyAsJump target game <|> applyAsMove target game)
