@@ -11,6 +11,7 @@ import qualified Data.Map                      as Map
 import qualified Text.Printf                   as TP
 import qualified Data.List                     as DL
 import qualified Data.Maybe                    as DM
+import           Control.Applicative
 
 type BoardState = Map.Map Pos Piece
 
@@ -275,44 +276,74 @@ replaceBoardState s (Game _ p t b) = Game s p t b
 
 runMove :: Move -> GameState -> Either String GameState
 runMove m idleState = do
-  targetState <- beginMove m idleState
-  applyMove targetState
+  gameWithSelectedPiece <- selectPiece (moveSource m) idleState
+  applyMove (moveTarget m) gameWithSelectedPiece
 
-beginMove :: Move -> GameState -> Either String (Pos, GameWithSelectedPiece)
-beginMove (LineMove s t) (Idle b p) = do
-  piece <- nothingIsAnError (Map.lookup s (state b)) "no piece at position"
-    >>= isOwnedBy p
-    -- check is piece at pos ; is owned by player
-    -- check if target is inside board
-    -- check if target is unoccupied
-  return (t, GameWithSelectedPiece b piece s)
+selectPiece :: Pos -> GameState -> Either String GameWithSelectedPiece
+selectPiece position (Idle b player) = do
+  piece <-
+    maybe (Left "no piece at position") Right (Map.lookup position (state b))
+      >>= isOwnedBy player
+  return $ GameWithSelectedPiece b piece position
  where
   isOwnedBy :: Player -> Piece -> Either String Piece
   isOwnedBy p' pc =
     if owner pc == p' then Right pc else Left "wrong piece chosen"
-beginMove _ _ = error "umphf"
+selectPiece _ _ = error "umphf"
 
+--data GameState = Idle Board Player
+--               | PieceSelected Board Piece Pos
 
-applyMove :: (Pos, GameWithSelectedPiece) -> Either String GameState
-applyMove (t, GameWithSelectedPiece b (Piece Pawn player) pos) =
-  case applyAsJump player (LineMove pos t) (state b) of
-    Just gs -> Right gs
-    Nothing -> case applyAsMove of
-      Just gs -> Right gs
-      Nothing -> Left "unable to apply move"
+applyMove :: Pos -> GameWithSelectedPiece -> Either String GameState
+applyMove target game@(GameWithSelectedPiece _ (Piece Pawn _) _) = maybe
+  (Left "unable to apply move")
+  Right
+  (applyAsJump target game <|> applyAsMove target game)
  where
-  applyAsJump :: Player -> Move -> BoardState -> Maybe GameState
-  applyAsJump _ (LineMove source target) _ = do
-    d <- diagonalDist source target
-    if d /= 2 then Nothing else undefined
-  applyAsJump _ _ _ = error "umphf"
+  applyAsJump :: Pos -> GameWithSelectedPiece -> Maybe GameState
+  applyAsJump t (GameWithSelectedPiece b pc s) = do
+    d <- diagonalDist s t
+    if d /= 2
+      then Nothing
+      else do
+        board <-
+          targetPosIsValid t b
+          >>= targetPosIsUnoccupied t
+          >>= removeOpponentPiece (LineMove s t) (owner pc)
+          >>= placePieceAtBoard t pc
+        return $ PieceSelected board pc t
+
+  applyAsMove :: Pos -> GameWithSelectedPiece -> Maybe GameState
+  applyAsMove t (GameWithSelectedPiece b pc s) = do
+    d <- diagonalDist s t
+    if d /= 1
+      then Nothing
+      else do
+        board <-
+          targetPosIsValid t b
+          >>= targetPosIsUnoccupied t
+          >>= placePieceAtBoard t pc
+        return $ Idle board (opponentOf (owner pc))
+
+  targetPosIsValid :: Pos -> Board -> Maybe Board
+  targetPosIsValid p b = if isInside p (size b) then Just b else Nothing
+
+  targetPosIsUnoccupied :: Pos -> Board -> Maybe Board
+  targetPosIsUnoccupied p b =
+    if Map.notMember p (state b) then Just b else Nothing
+
+  removeOpponentPiece :: Move -> Player -> Board -> Maybe Board
+  removeOpponentPiece m player b = do
+    jp      <- jumpoverPos m
+    opPiece <- Map.lookup jp (state b)
+    if owner opPiece == opponentOf player then Just b else Nothing
+
+  placePieceAtBoard :: Pos -> Piece -> Board -> Maybe Board
+  placePieceAtBoard pos piece b =
+    return $ Board (Map.insert pos piece (state b)) (size b)
 
 
-  applyAsMove :: Maybe GameState
-  applyAsMove = undefined
-
-
-applyMove (_, (GameWithSelectedPiece _ (Piece King _) _)) = undefined
+applyMove _ (GameWithSelectedPiece _ (Piece King _) _) = undefined
 
 
 -- check is move direction valid

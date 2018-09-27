@@ -7,8 +7,8 @@ module Lib
   )
 where
 
-import           Text.Printf                   as TP
-import           Data.Char                     as DC
+import qualified Text.Printf                   as TP
+import qualified Data.Char                     as DC
 
 type Grid a = [[a]]
 
@@ -19,7 +19,7 @@ zipOverGridWith :: (a -> b -> c) -> Grid a -> Grid b -> Grid c
 zipOverGridWith = zipWith . zipWith
 
 mapOverGrid :: (a -> b) -> Grid a -> Grid b
-mapOverGrid = (map . map)
+mapOverGrid = map . map
 
 data Location = Location {xpos :: Int, ypos :: Int} deriving (Eq)
 
@@ -27,8 +27,7 @@ instance Show Location where
   show = fmtLocAlNum
 
 fmtLocAlNum :: Location -> String
-fmtLocAlNum l =
-  "(" ++ [xPos2Char $ xpos l] ++ (TP.printf "%02d" $ ypos l) ++ ")"
+fmtLocAlNum l = "(" ++ [xPos2Char $ xpos l] ++ TP.printf "%02d" (ypos l) ++ ")"
 
 xPos2Char :: Int -> Char
-xPos2Char d = DC.chr ((DC.ord 'A') + (d - 1))
+xPos2Char d = DC.chr (DC.ord 'A' + (d - 1))

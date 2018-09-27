@@ -10,6 +10,14 @@ data Move = MoveSimple Pos Direction
           | LineMove Pos Pos
           deriving (Show, Eq, Ord)
 
+moveSource :: Move -> Pos
+moveSource (LineMove   s _) = s
+moveSource (MoveSimple s _) = s
+
+moveTarget :: Move -> Pos
+moveTarget (LineMove   _ t) = t
+moveTarget (MoveSimple s d) = shiftUnconstrained d s
+
 directionOf :: Move -> Maybe Direction
 directionOf (MoveSimple _             d            ) = Just d
 directionOf (LineMove   s@(Pos x0 y0) t@(Pos x1 y1)) = do
@@ -76,7 +84,18 @@ jumpoverPos (LineMove s t) = do
         | x < 0  = -1
         | x == 0 = 0
   sgn _ = error "umphf"
-  f a0 a1 = a0 + ((abs (a1 - a0)) - 1) * (sgn (a1 - a0))
+  f a0 a1 = a0 + (abs (a1 - a0) - 1) * sgn (a1 - a0)
   xn = f (x_ s) (x_ t)
   yn = f (y_ s) (y_ t)
-jumpoverPos _ = error "umphf"
+jumpoverPos _ = Nothing
+
+moveTraceReversed :: Move -> [Pos]
+moveTraceReversed m =
+  let s   = moveSource m
+      t   = moveTarget m
+      md  = diagonalDist s t
+      dir = Pos (signum (x_ t - x_ s)) (signum (y_ t - y_ s))
+      traceElem i = Pos (x_ s + (i * x_ dir)) (y_ s + (i * x_ dir))
+  in  case md of
+        Nothing -> []
+        Just d  -> reverse $ map traceElem [1 .. (d - 1)]
