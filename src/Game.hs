@@ -5,12 +5,12 @@ import           Pieces
 import           Lib
 import           Game.Move
 import           Game.Pos
-import           Utility
+--import           Utility
 
 import qualified Data.Map                      as Map
 import qualified Text.Printf                   as TP
 import qualified Data.List                     as DL
-import qualified Data.Maybe                    as DM
+--import qualified Data.Maybe                    as DM
 import           Control.Applicative
 
 type BoardState = Map.Map Pos Piece
@@ -120,17 +120,17 @@ instance Show SquareColor where
 emptyColor :: (Int, Int) -> SquareColor
 emptyColor (x, y) = if odd (x + y) then WhiteSquare else BlackSquare
 
-playMove :: Maybe Move -> Game -> Either (Game, String) Game
+playMove :: Maybe Move -> GameState -> Either (GameState, String) GameState
 playMove Nothing  g = Left (g, "No move provided.")
 playMove (Just m) g = case Map.lookup m (multiverseFor g) of
   Nothing                   -> Left (g, "illegal move")
   Just (Left  s           ) -> Left (g, s)
   Just (Right newGameState) -> Right newGameState
 
-type GameOrErr = Either String Game
+type GameOrErr = Either String GameState
 type MovesToGames = Map.Map Move GameOrErr
 
-multiverseFor :: Game -> MovesToGames -- TODO: filter jumps when jump is available
+multiverseFor :: GameState -> MovesToGames -- TODO: filter jumps when jump is available
 multiverseFor g = movesToGames g $ movesFor g
 
 movesFor :: GameState -> [Move]
@@ -141,10 +141,10 @@ movesForPiece (p, Piece Pawn _) =
   [ MoveSimple p dir | dir <- [NE, NW, SE, SW] ]
 movesForPiece (_, Piece King _) = undefined
 
-movesToGames :: Game -> [Move] -> MovesToGames
+movesToGames :: GameState -> [Move] -> MovesToGames
 movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, maybeMakeMove g m)) mvs
 
-maybeMakeMove :: Game -> Move -> GameOrErr
+maybeMakeMove :: GameState -> Move -> GameOrErr
 maybeMakeMove = undefined
 
 endTurn :: Game -> Game
@@ -170,8 +170,7 @@ selectPiece position (Idle b player) = do
     if owner pc == p' then Right pc else Left "wrong piece chosen"
 selectPiece _ _ = error "umphf"
 
---data GameState = Idle Board Player
---               | PieceSelected Board Piece Pos
+
 
 applyMove :: Pos -> GameWithSelectedPiece -> Either String GameState
 applyMove target game = maybe
