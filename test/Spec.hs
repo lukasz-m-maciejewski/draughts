@@ -1,5 +1,5 @@
-import Test.Hspec
-import PositionSpec
+import           PositionSpec
+import           Test.Hspec
 
 main :: IO ()
 main = positionSpec

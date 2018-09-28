@@ -1,7 +1,7 @@
 module Game.Move where
 
-import           Game.Pos
 import           Data.Char
+import           Game.Pos
 import           Text.Parsec
 
 import           Utility

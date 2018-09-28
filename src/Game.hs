@@ -1,15 +1,15 @@
 module Game where
 
-import           Position
-import           Pieces
-import           Lib
 import           Game.Move
 import           Game.Pos
+import           Lib
+import           Pieces
+import           Position
 --import           Utility
 
-import qualified Data.Map                      as Map
-import qualified Text.Printf                   as TP
-import qualified Data.List                     as DL
+import qualified Data.List           as DL
+import qualified Data.Map            as Map
+import qualified Text.Printf         as TP
 --import qualified Data.Maybe                    as DM
 import           Control.Applicative
 
@@ -39,10 +39,10 @@ data TurnState = WaitingForMove
                | ContinueMove Pos
   deriving (Eq, Show)
 
-data Game = Game { boardState :: BoardState
+data Game = Game { boardState   :: BoardState
                  , activePlayer :: Player
-                 , turnState :: TurnState
-                 , boardSize :: PosConstraint
+                 , turnState    :: TurnState
+                 , boardSize    :: PosConstraint
                  }
 
 instance Show Game where
@@ -52,7 +52,7 @@ instance Show Game where
     ++ show (activePlayer g)
 
 data Board = Board { state :: BoardState
-                   , size :: PosConstraint }
+                   , size  :: PosConstraint }
              deriving (Eq)
 
 instance Show Board where
@@ -64,7 +64,7 @@ data GameState = Idle Board Player
 data GameWithSelectedPiece = GameWithSelectedPiece Board Piece Pos
 
 instance Show GameState where
-  show (Idle b p) = show b ++ "\nActive: " ++ show p
+  show (Idle b p)             = show b ++ "\nActive: " ++ show p
   show (PieceSelected b pc _) = show b ++ "\nActive: " ++ show (owner pc)
 
 putGame :: Game -> IO ()

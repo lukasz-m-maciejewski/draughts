@@ -7,8 +7,8 @@ module Lib
   )
 where
 
-import qualified Text.Printf                   as TP
-import qualified Data.Char                     as DC
+import qualified Data.Char   as DC
+import qualified Text.Printf as TP
 
 type Grid a = [[a]]
 

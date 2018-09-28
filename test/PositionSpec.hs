@@ -2,8 +2,8 @@ module PositionSpec
   ( positionSpec
   ) where
 
-import Test.Hspec
-import Position
+import           Position
+import           Test.Hspec
 
 positionSpec :: IO ()
 positionSpec = hspec $ do
