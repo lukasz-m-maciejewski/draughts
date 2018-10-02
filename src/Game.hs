@@ -138,8 +138,16 @@ movesFor = undefined
 
 movesForPiece :: (Pos, Piece) -> [Move]
 movesForPiece (p, Piece Pawn _) =
-  [ MoveSimple p dir | dir <- [NE, NW, SE, SW] ]
-movesForPiece (_, Piece King _) = undefined
+  [moveTransform shiftOne, moveTransform shiftTwo] <*> simpleMoves
+  where
+    simpleMoves =   [ MoveSimple p dir | dir <- [NE, NW, SE, SW] ]
+    shiftOne = shiftUnconstrained
+    shiftTwo dir = shiftUnconstrained dir . shiftUnconstrained dir
+    moveTransform f (MoveSimple src dir) = LineMove src (f dir src)
+    moveTransform _ _ = error "invalid argument"
+
+movesForPiece (p, Piece King _) =
+  undefined
 
 movesToGames :: GameState -> [Move] -> MovesToGames
 movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, maybeMakeMove g m)) mvs

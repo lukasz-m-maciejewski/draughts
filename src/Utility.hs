@@ -19,3 +19,8 @@ nothingIsAnError input errMsg = case input of
 
 eitherIsRight :: Either a b -> Bool
 eitherIsRight = either (const False) (const True)
+
+
+repeatApply :: Integer -> (a -> a) -> a -> [a]
+repeatApply n f x = if n <= 0 then []
+  else x : repeatApply (n - 1) f (f x)
