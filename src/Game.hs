@@ -137,17 +137,17 @@ movesFor :: GameState -> [Move]
 movesFor = undefined
 
 movesForPiece :: (Pos, Piece) -> [Move]
-movesForPiece (p, Piece Pawn _) =
-  [moveTransform shiftOne, moveTransform shiftTwo] <*> simpleMoves
+movesForPiece (p, piece) =
+  [moveTransform f m | f <- compositionsList, m <- simpleMoves]
   where
     simpleMoves =   [ MoveSimple p dir | dir <- [NE, NW, SE, SW] ]
-    shiftOne = shiftUnconstrained
-    shiftTwo dir = shiftUnconstrained dir . shiftUnconstrained dir
-    moveTransform f (MoveSimple src dir) = LineMove src (f dir src)
+    shift  = shiftUnconstrained
+    compositionsList n d = take n $ iterate (shift d .) (shift d)
+    moveDist = if kind piece == Pawn then 2 else 10
+    moveTransform f (MoveSimple src dir) = LineMove src (f src)
     moveTransform _ _ = error "invalid argument"
+    possibilities = compositionsList moveDist <$> [NE, NW, SE, SW]
 
-movesForPiece (p, Piece King _) =
-  undefined
 
 movesToGames :: GameState -> [Move] -> MovesToGames
 movesToGames g mvs = Map.fromList $ DL.map (\m -> (m, maybeMakeMove g m)) mvs
